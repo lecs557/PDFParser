@@ -29,5 +29,11 @@ for page in pages:
         if isinstance(lobj, LTTextBox):
             for line in lobj:
                 if isinstance(line, LTTextLine):
-                    x, y, text = line.bbox[0], line.bbox[3], line.get_text()
+                    x, y, text = float(line.bbox[0]), float(line.bbox[3]), line.get_text().strip()
                     soa.process(x, y, text)
+for t in soa.transactions:
+    if t.date != "":
+        print(t.date)
+        print(t.subject)
+        print(t.balance)
+soa.validate()
