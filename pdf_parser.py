@@ -22,7 +22,7 @@ soa = ING_DiBa_SOA()
 pages = PDFPage.get_pages(pdfFileObj)
 
 for page in pages:
-    print('Processing next page...')
+    soa.newPage()
     interpreter.process_page(page)
     layout = device.get_result()
     for lobj in layout:
@@ -31,9 +31,12 @@ for page in pages:
                 if isinstance(line, LTTextLine):
                     x, y, text = float(line.bbox[0]), float(line.bbox[3]), line.get_text().strip()
                     soa.process(x, y, text)
+soa.clear()
+print("DATUM: %s" % soa.date)
+print("ALT: %s" % soa.old)
+print("NEU: %s" % soa.new)
 for t in soa.transactions:
-    if t.date != "":
-        print(t.date)
-        print(t.subject)
-        print(t.balance)
+    print("---%s---" % t.date)
+    print(t.subject)
+    print("||||%s" % t.balance)
 soa.validate()
