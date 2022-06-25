@@ -1,6 +1,7 @@
 import re
 
-class ING_DiBa_SOA:
+
+class INGDiBaSOA:
     datePattern = re.compile("\d{2}\.\d{2}\.\d{4}")
 
     def __init__(self):
@@ -20,13 +21,13 @@ class ING_DiBa_SOA:
             self.newY = None
         if "Alter Saldo" in text:
             self.oldY = y
-        if "Neuer Saldo" in text:
+        if "Neuer Saldo" in text and x > 200:
             self.newY = y
         if self.datePattern.match(text) and x > 200 and not self.date:
             self.date = text
-        self.getTransactionByY(y).process(x, y, text)
+        self.get_transaction_by_y(y).process(x, y, text)
 
-    def getTransactionByY(self, y):
+    def get_transaction_by_y(self, y):
         for transaction in self.transactions:
             if transaction.lastY and transaction.lastY - y < 15:
                 return transaction
@@ -43,7 +44,7 @@ class ING_DiBa_SOA:
                     self.transactions.remove(transaction)
                     rem = True
 
-    def newPage(self):
+    def new_page(self):
         for transaction in self.transactions:
             transaction.y = None
             transaction.lastY = None
@@ -81,6 +82,7 @@ class Transaction:
         elif 400 < x < 600 and self.y == y:
             try:
                 self.balance = int(text.replace(".", "").replace(",", ""))
-            except:
+            except Exception as e:
                 self.y = None
                 self.lastY = None
+                print(e)
