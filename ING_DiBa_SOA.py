@@ -2,9 +2,9 @@ import re
 
 class ING_DiBa_SOA:
     datePattern = re.compile("\d{2}\.\d{2}\.\d{4}")
-    transactions = []
 
     def __init__(self):
+        self.transactions = []
         self.date = None
         self.new = None
         self.old = None
