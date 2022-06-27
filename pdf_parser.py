@@ -1,3 +1,4 @@
+import sys
 import os
 from pdfminer.layout import LAParams, LTTextLine, LTTextBox
 from pdfminer.pdfpage import PDFPage
@@ -5,9 +6,17 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from INGDiBaSOA import INGDiBaSOA
+from SQLiteWriter import SQLLiteWriter
+from Table import SOATable
+
 
 print("PDF Parser")
 
+sqlwriter = SQLLiteWriter("db.db")
+sqlwriter.create_table(SOATable())
+id = sqlwriter.insert(SOATable(), ["test_date", "0", "900", "1"])
+print(id)
+sys.exit()
 for year in range(2014, 2015):
     folder = "/home/marcel/Marcel/Geld/ING_DiBa/Kontoauszüge/Bilanz "+str(year)
     print(folder)
