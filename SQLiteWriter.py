@@ -8,8 +8,23 @@ class SQLLiteWriter:
         self.db_file = db_file
         self.conn = None
 
-    def load_table(self, table):
-        print("todo")
+    def load_table(self, table, where=""):
+        self.connect()
+        select = "select "
+        i = 0
+        for x in table.get_table_fields():
+            select += x.name
+            i = i + 1
+            if i != len(table.get_table_fields()):
+                select += ","
+        select += " from "+table.get_tablename()
+        print(select+" "+where)
+        cur = self.conn.cursor()
+        cur.execute(select+" "+where)
+        res = cur.fetchall()
+        self.conn.commit()
+        self.disconnect()
+        return res
 
     def insert(self, table, values):
         self.connect()
@@ -22,8 +37,8 @@ class SQLLiteWriter:
             if x.name == "id":
                 continue
             sql += x.name
-            valuesql += "\"" + values[i] + "\""
-            where += x.name + " == \"" + values[i] + "\""
+            valuesql += "\"" + str(values[i]) + "\""
+            where += x.name + " == \"" + str(values[i]) + "\""
             i = i + 1
             if i + 1 != len(table.get_table_fields()):
                 sql += ","
@@ -68,7 +83,6 @@ class SQLLiteWriter:
     def connect(self):
         try:
             self.conn = sqlite3.connect(self.db_file)
-            print(sqlite3.version)
         except Error as e:
             print(e)
 

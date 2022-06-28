@@ -11,6 +11,7 @@ class INGDiBaSOA:
         self.old = None
         self.newY = None
         self.oldY = None
+        self.valid = None
 
     def process(self, x, y, text):
         if self.oldY and -2 < self.oldY - y < 2:
@@ -54,10 +55,9 @@ class INGDiBaSOA:
         for t in self.transactions:
             sum += t.balance
         if self.new - self.old == sum:
-            print("Valid")
+            self.valid = "1"
         else:
-            print("%s %s" % (sum, self.new - self.old))
-            print("invalid")
+            self.valid = "0"
 
 
 class Transaction:
@@ -85,4 +85,3 @@ class Transaction:
             except Exception as e:
                 self.y = None
                 self.lastY = None
-                print(e)

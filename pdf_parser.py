@@ -7,16 +7,13 @@ from pdfminer.pdfinterp import PDFPageInterpreter
 from pdfminer.converter import PDFPageAggregator
 from INGDiBaSOA import INGDiBaSOA
 from SQLiteWriter import SQLLiteWriter
-from Table import SOATable
+from Table import SOATable, TransactionTable
 
 
 print("PDF Parser")
-
 sqlwriter = SQLLiteWriter("db.db")
 sqlwriter.create_table(SOATable())
-id = sqlwriter.insert(SOATable(), ["test_date", "0", "900", "1"])
-print(id)
-sys.exit()
+sqlwriter.create_table(TransactionTable())
 for year in range(2014, 2015):
     folder = "/home/marcel/Marcel/Geld/ING_DiBa/Kontoauszüge/Bilanz "+str(year)
     print(folder)
@@ -42,9 +39,7 @@ for year in range(2014, 2015):
                             x, y, text = float(line.bbox[0]), float(line.bbox[3]), line.get_text().strip()
                             soa.process(x, y, text)
         soa.clear()
-        print("DATUM: %s" % soa.date)
-        print("ALT: %s" % soa.old)
-        print("NEU: %s" % soa.new)
-        for t in soa.transactions:
-            print(t)
         soa.validate()
+        id = sqlwriter.insert(SOATable(), [soa.date, soa.old, soa.new, soa.valid, file])
+        for t in soa.transactions:
+            ta_id = sqlwriter.insert(TransactionTable(), [id, t.date, t.subject, t.balance])
