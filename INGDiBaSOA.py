@@ -30,9 +30,11 @@ class INGDiBaSOA:
 
     def get_transaction_by_y(self, y):
         for transaction in self.transactions:
-            if transaction.lastY and transaction.lastY - y < 15:
+            if transaction.lastY and (0 < transaction.lastY - y < 15 or 0 <= transaction.y - y < 15):
+                print("ALTE TRANSACTION %s" % transaction.y)
                 return transaction
         t = Transaction(y)
+        print("NEUE TRANSACTION %s" % y)
         self.transactions.append(t)
         return t
 
@@ -55,9 +57,9 @@ class INGDiBaSOA:
         for t in self.transactions:
             sum += t.balance
         if self.new - self.old == sum:
-            self.valid = "1"
+            self.valid = 1
         else:
-            self.valid = "0"
+            self.valid = 0
 
 
 class Transaction:
@@ -71,6 +73,7 @@ class Transaction:
         self.lastY = y
 
     def process(self, x, y, text):
+        print(text)
         if self.datePattern.match(text) and self.y == y:
             self.date = text
         if 100 < x < 200 and self.lastY - y < 15:
