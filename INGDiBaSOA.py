@@ -30,7 +30,7 @@ class INGDiBaSOA:
 
     def get_transaction_by_y(self, y):
         for transaction in self.transactions:
-            if transaction.lastY and (0 < transaction.lastY - y < 15 or 0 <= transaction.y - y < 15):
+            if transaction.lastY and (0 < transaction.lastY - y < 15 or -5 <= transaction.y - y < 15):
                 print("ALTE TRANSACTION %s" % transaction.y)
                 return transaction
         t = Transaction(y)

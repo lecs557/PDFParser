@@ -41,8 +41,8 @@ class SQLLiteWriter:
                 set += " and "
         select += " from "+table.get_tablename() + " where id==" + str(id)
         set += " where id==" + str(id)
-        print(select)
         cur = self.conn.cursor()
+        print("UPDATE?   "+select)
         cur.execute(select)
         res = cur.fetchall()
         if len(res) == 1 and not res[0] == values:
@@ -72,7 +72,7 @@ class SQLLiteWriter:
                 where += " AND "
         insert += ")"
         valuesql += ")"
-        print(select + " " + where)
+        print("EXISTS?   "+select + " " + where)
         cur = self.conn.cursor()
         cur.execute(select + " " + where)
         res = cur.fetchall()

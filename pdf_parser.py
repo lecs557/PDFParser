@@ -14,14 +14,14 @@ print("PDF Parser")
 sqlwriter = SQLLiteWriter("db.db")
 sqlwriter.create_table(SOATable())
 sqlwriter.create_table(TransactionTable())
-for year in range(2022, 2023):
+for year in range(2015, 2016):
     folder = "/home/marcel/Marcel/Geld/ING_DiBa/Kontoauszüge/Bilanz "+str(year)
     print(folder)
     files = os.listdir(folder)
     files.sort()
     for file in files:
         print(file)
-        if "02.2022" in file:
+        if "11.2015" in file:
             pdfFileObj = open(folder+"/"+file, 'rb')
             rsrcmgr = PDFResourceManager()
             laparams = LAParams()
@@ -44,5 +44,4 @@ for year in range(2022, 2023):
             id = sqlwriter.insert_if_does_not_exists(SOATable(), [soa.date, soa.old, soa.new, soa.valid, file], ignore=["valid"])
             sqlwriter.update_if_different(SOATable(), ["valid"], (soa.valid,), id)
             for t in soa.transactions:
-                pass
-                #ta_id = sqlwriter.insert_if_does_not_exists(TransactionTable(), [id, t.date, t.subject, t.balance])
+                ta_id = sqlwriter.insert_if_does_not_exists(TransactionTable(), [id, t.date, t.subject, t.balance])
