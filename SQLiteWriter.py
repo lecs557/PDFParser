@@ -58,17 +58,20 @@ class SQLLiteWriter:
         where = "where "
         insert = "insert into " + table.get_tablename() + "("
         valuesql = "values("
-        i = -2
+        i = -1
         for x in table.get_table_fields():
-            i = i + 1
-            if x.name == "id" or x.name in ignore:
+            if x.name == "id":
                 continue
+            i = i + 1
             insert += x.name
             valuesql += "\"" + str(values[i]) + "\""
-            where += x.name + " == \"" + str(values[i]) + "\""
-            if i+2 != len(table.get_table_fields()):
+            if i + 2 != len(table.get_table_fields()):
                 insert += ","
                 valuesql += ","
+            if x.name in ignore:
+                continue
+            where += x.name + " == \"" + str(values[i]) + "\""
+            if i + 2 != len(table.get_table_fields()):
                 where += " AND "
         insert += ")"
         valuesql += ")"
