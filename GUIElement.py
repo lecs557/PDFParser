@@ -1,64 +1,63 @@
-import PySimpleGUI as sg
+from PyQt6 import QtWidgets, QtGui
 
 
-class SOAElement:
+class SOAElement(QtWidgets.QWidget):
     def __init__(self, soa, show_element):
+        super().__init__()
         self.soa = soa
-        self.showEl = show_element.get_layout()
+        self.showEl = show_element
         self.soaEl = None
-        self.show = False
-
-    def get_layout(self):
-        color = "red"
+        self.color = "red"
         if self.soa[4]:
-            color = "green"
+            self.color = "green"
+        self.button = QtWidgets.QPushButton(str(soa[1]))
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.button)
+        self.button.clicked.connect(self.toggle_show)
 
-        self.soaEl = sg.Text(str(self.soa[5]), text_color=color, font=('Helvetica', 20), enable_events=True, key=lambda: self.toggle_show())
-        return [self.soaEl]
 
     def toggle_show(self):
-        self.show = not self.show
-        self.showEl.Update(visible=self.show)
+        self.layout.addWidget(self.showEl)
 
 
-class TransactionTableElement:
+class TransactionTableElement(QtWidgets.QTableView):
     def __init__(self, transaction_els):
+        super().__init__()
         self.transaction_els = transaction_els
-
-    def get_layout(self):
-        heading = ["date", "subject", "balance"]
-        values = []
+        model = QtGui.QStandardItemModel()
+        model.setHorizontalHeaderLabels(["date", "subject", "balance"])
+        self.setModel(model)
         for t in self.transaction_els:
-            values.append(t.get_layout())
-        return sg.Table(values=values, headings=heading)
-
+            model.appendRow(t.get())
+        self.setFixedHeight(200)
 
 class TransactionTableRowElement:
     def __init__(self, transaction):
         self.transaction = transaction
 
-    def get_layout(self):
-        return [self.transaction[2], self.transaction[3], self.transaction[4]]
+    def get(self):
+        return [QtGui.QStandardItem(str(self.transaction[2])),
+                QtGui.QStandardItem(str(self.transaction[3])),
+                QtGui.QStandardItem(str(self.transaction[4]))]
 
 
-class YearElement:
+class YearElement(QtWidgets.QWidget):
     def __init__(self, year, soa_els):
+        super().__init__()
         self.year = year
         self.soa_els = soa_els
-
-    def get_layout(self):
-        values = []
+        self.layout = QtWidgets.QVBoxLayout(self)
         for t in self.soa_els:
-            values.append(t.get_layout())
-        return [sg.Tab(self.year, values)]
+            self.layout.addWidget(t)
 
 
-class OverviewElement:
+class OverviewElement(QtWidgets.QWidget):
     def __init__(self, year_els):
+        super().__init__()
         self.year_els = year_els
-
-    def get_layout(self):
-        values = []
+        self.tabs = QtWidgets.QTabWidget()
         for t in self.year_els:
-            values.append(t.get_layout())
-        return [[sg.TabGroup(values)]]
+            self.tabs.addTab(t, t.year)
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.tabs)
+

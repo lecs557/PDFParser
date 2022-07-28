@@ -1,6 +1,5 @@
-import sys
 import random
-from PyQt6 import QtCore, QtWidgets, QtGui
+from PyQt6 import QtWidgets
 
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
@@ -8,9 +7,11 @@ class MyWidget(QtWidgets.QWidget):
 
         self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
 
+        self.tabs = QtWidgets.QTabWidget()
         self.button = QtWidgets.QPushButton("Click me!")
         self.text = QtWidgets.QLabel("Hello World")
         self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.tabs)
         self.layout.addWidget(self.text)
         self.layout.addWidget(self.button)
 
@@ -19,11 +20,3 @@ class MyWidget(QtWidgets.QWidget):
     def magic(self):
         self.text.setText(random.choice(self.hello))
 
-if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-
-    widget = MyWidget()
-    widget.resize(800, 600)
-    widget.show()
-
-    sys.exit(app.exec())
