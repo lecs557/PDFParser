@@ -14,7 +14,7 @@ print("PDF Parser")
 sqlwriter = SQLLiteWriter("db.db")
 sqlwriter.create_table(SOATable())
 sqlwriter.create_table(TransactionTable())
-for year in range(2014, 2018):
+for year in range(2022, 2023):
     folder = 'C:\\Users\\m-gee\\Desktop\\Kontoauszüge\/Bilanz ' + str(year)
     print(folder)
     files = os.listdir(folder)
