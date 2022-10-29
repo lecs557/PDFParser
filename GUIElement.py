@@ -14,10 +14,10 @@ class SOAElement(QtWidgets.QWidget):
         if self.soa[4]:
             self.color = "green"
         self.button = QtWidgets.QPushButton(str(soa[1]))
+        self.button.setStyleSheet("background-color: "+self.color)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.button)
         self.button.clicked.connect(self.toggle_show)
-        self.layout.setSpacing(0)
         self.click = False
 
     def toggle_show(self):
@@ -94,10 +94,14 @@ class YearElement(QtWidgets.QWidget):
 class SumElement(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        self.sum = 0
         self.totalin = 0
         self.totalout = 0
+        self.sum = 0
         self.max = 0
+        self.groups = ["AMAZON", "BAFOEG", "Wertpa", "Dividen", "Gehalt"]
+        self.years = []
+        self.sums = []
+        self.y = 0
         self.miny = 2014
         self.maxy = 2022
         self.layout = QtWidgets.QVBoxLayout(self)
@@ -116,6 +120,34 @@ class SumElement(QtWidgets.QWidget):
         date = str(d[2]) + str(d[1]) + str(d[0]) + "0000"
         self.series.append(QtCore.QDateTime.fromString(date, "yyyyMMddhhmm").toMSecsSinceEpoch(), self.sum)
 
+        if int(d[2]) != self.y:
+            if not self.sums == []:
+                self.years.append(self.sums)
+            self.y = int(d[2])
+            self.sums = [0] * len(self.groups)
+        for i, val in enumerate(self.groups):
+            if val in t[3]:
+                self.sums[i] = self.sums[i] + t[4]
+
+
+    def create_sumtable(self):
+        self.years.append(self.sums)
+        model = QtGui.QStandardItemModel()
+        header = ["subject"]
+        rows = [[]for i in range(0, len(self.groups))]
+        for v in range(self.miny, self.maxy + 1):
+            header.append(str(v))
+        for i, gr in enumerate(self.groups):
+            rows[i].append(QtGui.QStandardItem(gr))
+            for sum_v in self.years:
+                rows[i].append(formatted_si(sum_v[i]))
+        model.setHorizontalHeaderLabels(header)
+        for row in rows:
+            model.appendRow(row)
+        tv = QtWidgets.QTableView()
+        tv.setModel(model)
+        return tv
+
     def plot(self):
         chart = QChart()
         chart.addSeries(self.series)
@@ -125,9 +157,7 @@ class SumElement(QtWidgets.QWidget):
         ax.setMax(QtCore.QDateTime.fromString(str(self.maxy + 1), "yyyy"))
         ax.setTickCount(self.maxy - self.miny + 2)
         ay = SumAxis()
-        ay.setMin(0)
         ay.setMax((int(self.max / 500000) + 1) * 500000)
-        ay.setTickCount(int(self.max / 1000000) + 2)
         chart.addAxis(ax, QtCore.Qt.AlignmentFlag.AlignBottom)
         chart.addAxis(ay, QtCore.Qt.AlignmentFlag.AlignLeft)
         cv = QChartView(chart)
@@ -137,8 +167,8 @@ class SumElement(QtWidgets.QWidget):
         self.create_table()
 
     def create_table(self):
-
         self.layout.addWidget(create_total_table(self.totalin, self.totalout, self.sum))
+        self.layout.addWidget(self.create_sumtable())
         self.layout.addItem(
             QtWidgets.QSpacerItem(4, 2, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding))
 
@@ -186,6 +216,6 @@ def formatted_si(v):
     si.setFont(TABLE_FONT)
     if v > 0:
         si.setForeground(QtGui.QColor(0, 155, 0))
-    else:
+    elif v < 0:
         si.setForeground(QtGui.QColor(155, 0, 0))
     return si

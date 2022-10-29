@@ -14,6 +14,8 @@ class INGDiBaSOA:
         self.valid = None
 
     def process(self, x, y, text):
+        if x < 60:
+            return
         if self.oldY and -2 < self.oldY - y < 2:
             self.old = int(text.replace(".", "").replace(",", "").replace("Euro", ""))
             self.oldY = None
@@ -30,7 +32,7 @@ class INGDiBaSOA:
 
     def get_transaction_by_y(self, y):
         for transaction in self.transactions:
-            if transaction.lastY and (0 < transaction.lastY - y < 15 or -5 <= transaction.y - y < 15):
+            if transaction.lastY and (0 < transaction.lastY - y < 12 or -5 <= transaction.y - y < 15):
                 return transaction
         t = Transaction(y)
         self.transactions.append(t)
@@ -74,13 +76,14 @@ class Transaction:
     def process(self, x, y, text):
         if self.datePattern.match(text) and self.y == y:
             self.date = text
+            #print("date: " + str(self.date)+" ->: " + str(self.y))
         if 100 < x < 200 and self.lastY - y < 15:
             if not self.subject:
                 self.subject = text
             else:
                 self.subject += "\n" + text
             self.lastY = y
-        elif 400 < x < 600 and self.y == y:
+        elif 400 < x < 600 and -15 < self.y - y < 15:
             try:
                 self.balance = int(text.replace(".", "").replace(",", ""))
             except Exception as e:

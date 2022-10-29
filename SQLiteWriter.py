@@ -42,12 +42,12 @@ class SQLLiteWriter:
         select += " from "+table.get_tablename() + " where id==" + str(id)
         set += " where id==" + str(id)
         cur = self.conn.cursor()
-        print("UPDATE?   "+select)
+        #print("UPDATE?   "+select)
         cur.execute(select)
         res = cur.fetchall()
         if len(res) == 1 and not res[0] == values:
             cur = self.conn.cursor()
-            print(update + " " + set)
+            #print(update + " " + set)
             cur.execute(update + " " + set)
             self.conn.commit()
         self.disconnect()
@@ -75,24 +75,25 @@ class SQLLiteWriter:
                 where += " AND "
         insert += ")"
         valuesql += ")"
-        print("EXISTS?   "+select + " " + where)
+        #print("EXISTS in "+table.get_tablename()+"?   "+select + " " + where)
         cur = self.conn.cursor()
         cur.execute(select + " " + where)
         res = cur.fetchall()
         if len(res) == 1:
-            id = res[0][0]
+            #print("YES")
+            soa_id = res[0][0]
         elif len(res) == 0:
-            print(insert + " " + valuesql)
+            #print(insert + " " + valuesql)
             cur.execute(insert + " " + valuesql)
             cur.execute(select + " " + where)
             res = cur.fetchall()
-            id = res[0][0]
+            soa_id = res[0][0]
         else:
-            print("update multiple entries?")
-            id = res[:][0]
+            #print("update multiple entries?")
+            soa_id = res[:][0]
         self.conn.commit()
         self.disconnect()
-        return id
+        return soa_id
 
     def create_table(self, table):
         self.connect()
