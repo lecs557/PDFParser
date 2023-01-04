@@ -1,5 +1,7 @@
+import random
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QDateTimeAxis, QCategoryAxis
+from pdf_parser import Parser
 
 TABLE_FONT = QtGui.QFont()
 TABLE_FONT.setPointSizeF(13)
@@ -10,13 +12,19 @@ class SOAElement(QtWidgets.QWidget):
         super().__init__()
         self.soa = soa
         self.show_el = show_element
-        self.color = "red"
+        self.color = "yellow"
         if self.soa[4]:
-            self.color = "green"
-        self.button = QtWidgets.QPushButton(str(soa[1]))
+            if soa[3] - soa[2] > 0:
+                self.color = "green"
+            else:
+                self.color = "red"
+        self.hbox = QtWidgets.QHBoxLayout()
+        self.button = QtWidgets.QPushButton("show")
         self.button.setStyleSheet("background-color: "+self.color)
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.button)
+        self.hbox.addWidget(self.button)
+        self.hbox.addWidget(formatted_lbl(soa[3] - soa[2]))
+        self.layout.addLayout(self.hbox)
         self.button.clicked.connect(self.toggle_show)
         self.click = False
 
@@ -98,7 +106,7 @@ class SumElement(QtWidgets.QWidget):
         self.totalout = 0
         self.sum = 0
         self.max = 0
-        self.groups = ["AMAZON", "BAFOEG", "Wertpa", "Dividen", "Gehalt"]
+        self.groups = ["AMAZON", "BAFOEG", "Wertpa", "Dividen", "Gehalt", "Pflegevers"]
         self.years = []
         self.sums = []
         self.y = 0
@@ -197,7 +205,50 @@ class OverviewElement(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.tabs)
 
+class MainElement(QtWidgets.QWidget):
+    def __init__(self, wid):
+        super().__init__()
 
+        self.wid = wid
+
+        self.button = QtWidgets.QPushButton("Show")
+        self.button.clicked.connect(self.magic)
+        self.btn = QtWidgets.QPushButton("QFileDialog static method demo")
+        self.btn.clicked.connect(self.getfile)
+        self.txt_path = QtWidgets.QLabel("path")
+        self.in_from = QtWidgets.QLineEdit()
+        self.in_to = QtWidgets.QLineEdit()
+        self.btn_parse = QtWidgets.QPushButton("Parse")
+        self.btn_parse.clicked.connect(self.parse)
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setSpacing(2)
+        self.layout.addWidget(self.button)
+        self.layout.addWidget(self.txt_path)
+        self.layout.addWidget(self.btn)
+        self.layout.addWidget(self.in_from)
+        self.layout.addWidget(self.in_to)
+        self.layout.addWidget(self.btn_parse)
+        self.layout.addItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding,
+                                                  QtWidgets.QSizePolicy.Policy.Expanding))
+
+
+    def magic(self):
+        self.wid.resize(800, 600)
+        self.wid.show()
+
+    def getfile(self):
+        fname = Q= str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        self.txt_path.setText(fname)
+
+    def parse(self):
+        try:
+            Parser(self.in_from.text(), self.in_to.text(), self.txt_path.text())
+        except Exception as e:
+            print(e)
+            raise e
+
+
+2
 def create_total_table(i, o, s):
     model = QtGui.QStandardItemModel()
     model.setHorizontalHeaderLabels(["Einnahmen", "Ausgaben", "Gesamt"])
@@ -219,3 +270,12 @@ def formatted_si(v):
     elif v < 0:
         si.setForeground(QtGui.QColor(155, 0, 0))
     return si
+
+def formatted_lbl(v):
+    lbl = QtWidgets.QLabel(str(v)[0:-5] + " " + str(v).zfill(3)[-5:-2] + "," + str(v).zfill(3)[-2:] + "€")
+    lbl.setFont(TABLE_FONT)
+    if v > 0:
+        lbl.setStyleSheet("color:rgb(0, 155, 0)")
+    elif v < 0:
+        lbl.setStyleSheet("color:rgb(155, 0, 0)")
+    return lbl

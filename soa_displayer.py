@@ -2,7 +2,7 @@ import sys
 from PyQt6 import QtWidgets
 from SQLiteWriter import SQLLiteWriter
 from Table import SOATable, TransactionTable
-from GUIElement import SOAElement, TransactionTableRowElement, TransactionTableElement, YearElement, OverviewElement, SumElement
+from GUIElement import SOAElement, TransactionTableRowElement, TransactionTableElement, YearElement, OverviewElement, SumElement, MainElement
 
 app = QtWidgets.QApplication([])
 sum_tab = SumElement()
@@ -20,8 +20,9 @@ for year in range(2014, 2023):
     tabs.append(YearElement(str(year), tabContent))
 widget = OverviewElement(tabs, sum_tab)
 
+widget2 = MainElement(widget)
 
-widget.resize(800, 600)
-widget.show()
+widget2.resize(800, 600)
+widget2.show()
 
 sys.exit(app.exec())
