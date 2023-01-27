@@ -22,13 +22,14 @@ class Parser:
         for year in range(int(rfrom), int(rto)):
             folder = path + '/Bilanz ' + str(year)
             print(folder)
+            if not os.path.exists(folder):
+                print("does not exist")
+                continue
             files = os.listdir(folder)
             files.sort()
             # parse pdfs of the given year
             for file in files:
-                # if not "02.2022" in file:
-                #    continue
-                # prepare to read pdf
+                print("read file: " + file)
                 pdfFileObj = open(folder + "/" + file, 'rb')
                 resource_manager = PDFResourceManager()
                 device = PDFPageAggregator(resource_manager, laparams=LAParams())

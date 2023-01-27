@@ -1,7 +1,8 @@
 import random
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QDateTimeAxis, QCategoryAxis
-from pdf_parser import Parser
+from Parser import Parser
+from Table import SOATable, TransactionTable
 
 TABLE_FONT = QtGui.QFont()
 TABLE_FONT.setPointSizeF(13)
@@ -20,7 +21,7 @@ class SOAElement(QtWidgets.QWidget):
                 self.color = "red"
         self.hbox = QtWidgets.QHBoxLayout()
         self.button = QtWidgets.QPushButton("show")
-        self.button.setStyleSheet("background-color: "+self.color)
+        self.button.setStyleSheet("background-color: " + self.color)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.hbox.addWidget(self.button)
         self.hbox.addWidget(formatted_lbl(soa[3] - soa[2]))
@@ -137,12 +138,11 @@ class SumElement(QtWidgets.QWidget):
             if val in t[3]:
                 self.sums[i] = self.sums[i] + t[4]
 
-
     def create_sumtable(self):
         self.years.append(self.sums)
         model = QtGui.QStandardItemModel()
         header = ["subject"]
-        rows = [[]for i in range(0, len(self.groups))]
+        rows = [[] for i in range(0, len(self.groups))]
         for v in range(self.miny, self.maxy + 1):
             header.append(str(v))
         for i, gr in enumerate(self.groups):
@@ -205,6 +205,7 @@ class OverviewElement(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addWidget(self.tabs)
 
+
 class MainElement(QtWidgets.QWidget):
     def __init__(self, wid):
         super().__init__()
@@ -212,12 +213,18 @@ class MainElement(QtWidgets.QWidget):
         self.wid = wid
 
         self.button = QtWidgets.QPushButton("Show")
-        self.button.clicked.connect(self.magic)
-        self.btn = QtWidgets.QPushButton("QFileDialog static method demo")
+        self.button.clicked.connect(self.showElement)
+        self.btn = QtWidgets.QPushButton("browse folder...")
         self.btn.clicked.connect(self.getfile)
         self.txt_path = QtWidgets.QLabel("path")
-        self.in_from = QtWidgets.QLineEdit()
-        self.in_to = QtWidgets.QLineEdit()
+        self.in_from = QtWidgets.QSpinBox(self)
+        self.in_from.setMinimum(2014)
+        self.in_from.setMaximum(2025)
+        self.in_from.setValue(2014)
+        self.in_to = QtWidgets.QSpinBox(self)
+        self.in_to.setMinimum(2014)
+        self.in_to.setMaximum(2025)
+        self.in_to.setValue(2023)
         self.btn_parse = QtWidgets.QPushButton("Parse")
         self.btn_parse.clicked.connect(self.parse)
         self.layout = QtWidgets.QVBoxLayout(self)
@@ -231,16 +238,18 @@ class MainElement(QtWidgets.QWidget):
         self.layout.addItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding,
                                                   QtWidgets.QSizePolicy.Policy.Expanding))
 
-
-    def magic(self):
+    def showElement(self):
         self.wid.resize(800, 600)
         self.wid.show()
 
     def getfile(self):
-        fname = Q= str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
+        fname = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
         self.txt_path.setText(fname)
 
     def parse(self):
+        if self.txt_path.text() == "path":
+            print("choose path")
+            return
         try:
             Parser(self.in_from.text(), self.in_to.text(), self.txt_path.text())
         except Exception as e:
@@ -248,7 +257,31 @@ class MainElement(QtWidgets.QWidget):
             raise e
 
 
-2
+def buildApp(sqlwriter):
+    sum_tab = SumElement()
+    orderFilename = lambda y: "where soa_date like '%" + str(y) + "%' order by file_name"
+    orderDate = lambda d: "where soa_id==" + str(d) + " order by transaction_date"
+    tabs = []
+    for year in range(2014, 2023):
+        tabContent = []
+        for soa in sqlwriter.load_table(SOATable(), orderFilename(year)):
+            transactions = []
+            for t in sqlwriter.load_table(TransactionTable(), orderDate(soa[0])):
+                # add point in chart for each transaction
+                sum_tab.append_transaction_to_chart(t)
+                # add table row for each transaction
+                transactions.append(TransactionTableRowElement(t))
+
+            # add table for each state of account
+            tabContent.append(SOAElement(soa, TransactionTableElement(transactions)))
+
+        # add tab for each year
+        tabs.append(YearElement(str(year), tabContent))
+    widget = OverviewElement(tabs, sum_tab)
+
+    return MainElement(widget)
+
+
 def create_total_table(i, o, s):
     model = QtGui.QStandardItemModel()
     model.setHorizontalHeaderLabels(["Einnahmen", "Ausgaben", "Gesamt"])
@@ -270,6 +303,7 @@ def formatted_si(v):
     elif v < 0:
         si.setForeground(QtGui.QColor(155, 0, 0))
     return si
+
 
 def formatted_lbl(v):
     lbl = QtWidgets.QLabel(str(v)[0:-5] + " " + str(v).zfill(3)[-5:-2] + "," + str(v).zfill(3)[-2:] + "€")
