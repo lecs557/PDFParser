@@ -1,7 +1,9 @@
-import random
+import sys
+
 from PyQt6 import QtWidgets, QtGui, QtCore
 from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QDateTimeAxis, QCategoryAxis
 from Parser import Parser
+from SQLiteWriter import SQLLiteWriter
 from Table import SOATable, TransactionTable
 
 TABLE_FONT = QtGui.QFont()
@@ -207,40 +209,53 @@ class OverviewElement(QtWidgets.QWidget):
 
 
 class MainElement(QtWidgets.QWidget):
-    def __init__(self, wid):
+    def __init__(self):
         super().__init__()
 
-        self.wid = wid
+        self.widget = None
+        self.thread = QtCore.QThread()
+        self.parser = Parser()
 
-        self.button = QtWidgets.QPushButton("Show")
-        self.button.clicked.connect(self.showElement)
-        self.btn = QtWidgets.QPushButton("browse folder...")
-        self.btn.clicked.connect(self.getfile)
+        self.parser.moveToThread(self.thread)
+
+        self.parser.sn_parse.connect(self.parser.parse)
+
+        self.thread.start()
+
+        btn_show = QtWidgets.QPushButton("Show")
+        btn_show.clicked.connect(self.showElement)
+
+        btn_browse = QtWidgets.QPushButton("browse folder...")
+        btn_browse.clicked.connect(self.getfile)
+
         self.txt_path = QtWidgets.QLabel("path")
+
         self.in_from = QtWidgets.QSpinBox(self)
         self.in_from.setMinimum(2014)
         self.in_from.setMaximum(2025)
         self.in_from.setValue(2014)
+
         self.in_to = QtWidgets.QSpinBox(self)
         self.in_to.setMinimum(2014)
         self.in_to.setMaximum(2025)
         self.in_to.setValue(2023)
-        self.btn_parse = QtWidgets.QPushButton("Parse")
-        self.btn_parse.clicked.connect(self.parse)
+
+        btn_parse = QtWidgets.QPushButton("Parse")
+        btn_parse.clicked.connect(self.parse)
+
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(2)
-        self.layout.addWidget(self.button)
+        self.layout.addWidget(btn_show)
         self.layout.addWidget(self.txt_path)
-        self.layout.addWidget(self.btn)
+        self.layout.addWidget(btn_browse)
         self.layout.addWidget(self.in_from)
         self.layout.addWidget(self.in_to)
-        self.layout.addWidget(self.btn_parse)
+        self.layout.addWidget(btn_parse)
         self.layout.addItem(QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding,
                                                   QtWidgets.QSizePolicy.Policy.Expanding))
 
     def showElement(self):
-        self.wid.resize(800, 600)
-        self.wid.show()
+        WindowManager.show_overview()
 
     def getfile(self):
         fname = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -250,36 +265,60 @@ class MainElement(QtWidgets.QWidget):
         if self.txt_path.text() == "path":
             print("choose path")
             return
-        try:
-            Parser(self.in_from.text(), self.in_to.text(), self.txt_path.text())
-        except Exception as e:
-            print(e)
-            raise e
+        self.parser.sn_parse.emit(self.in_from.text(), self.in_to.text(), self.txt_path.text())
 
 
-def buildApp(sqlwriter):
-    sum_tab = SumElement()
-    orderFilename = lambda y: "where soa_date like '%" + str(y) + "%' order by file_name"
-    orderDate = lambda d: "where soa_id==" + str(d) + " order by transaction_date"
-    tabs = []
-    for year in range(2014, 2023):
-        tabContent = []
-        for soa in sqlwriter.load_table(SOATable(), orderFilename(year)):
-            transactions = []
-            for t in sqlwriter.load_table(TransactionTable(), orderDate(soa[0])):
-                # add point in chart for each transaction
-                sum_tab.append_transaction_to_chart(t)
-                # add table row for each transaction
-                transactions.append(TransactionTableRowElement(t))
+class WindowManager:
+    load = None
+    main = MainElement()
+    overView = None
 
-            # add table for each state of account
-            tabContent.append(SOAElement(soa, TransactionTableElement(transactions)))
+    @staticmethod
+    def show_load():
+        WindowManager.compute()
+        WindowManager.overView.resize(800, 600)
+        WindowManager.overView.show()
 
-        # add tab for each year
-        tabs.append(YearElement(str(year), tabContent))
-    widget = OverviewElement(tabs, sum_tab)
+    @staticmethod
+    def show_main():
+        WindowManager.main.resize(800, 600)
+        WindowManager.main.show()
 
-    return MainElement(widget)
+    @staticmethod
+    def show_overview():
+        WindowManager.compute()
+        WindowManager.overView.resize(800, 600)
+        WindowManager.overView.show()
+
+    @staticmethod
+    def compute():
+        sqlwriter = SQLLiteWriter("finanzen.db")
+        sum_tab = SumElement()
+        orderFilename = lambda y: "where soa_date like '%" + str(y) + "%' order by file_name"
+        orderDate = lambda d: "where soa_id==" + str(d) + " order by transaction_date"
+        tabs = []
+        # first and last year
+        orderFile= "order by SUBSTRING(file_name,3,7)"
+        allsoas = sqlwriter.load_table(SOATable(), orderFile)
+        first = int(allsoas[0][5][3:7])
+        last = int(allsoas[len(allsoas)-1][5][3:7])
+        for year in range(first, last+1):
+            tabContent = []
+            for soa in sqlwriter.load_table(SOATable(), orderFilename(year)):
+                transactions = []
+                for t in sqlwriter.load_table(TransactionTable(), orderDate(soa[0])):
+                    # add point in chart for each transaction
+                    sum_tab.append_transaction_to_chart(t)
+                    # add table row for each transaction
+                    transactions.append(TransactionTableRowElement(t))
+
+                # add table for each state of account
+                tabContent.append(SOAElement(soa, TransactionTableElement(transactions)))
+
+            # add tab for each year
+            tabs.append(YearElement(str(year), tabContent))
+
+        WindowManager.overView = OverviewElement(tabs, sum_tab)
 
 
 def create_total_table(i, o, s):

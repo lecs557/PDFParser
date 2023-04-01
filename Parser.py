@@ -1,5 +1,5 @@
-import sys
 import os
+from PyQt6 import QtCore, QtWidgets
 from pdfminer.layout import LAParams, LTTextLine, LTTextBox
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfinterp import PDFResourceManager
@@ -10,9 +10,10 @@ from SQLiteWriter import SQLLiteWriter
 from Table import SOATable, TransactionTable
 
 
-class Parser:
-    def __init__(self, rfrom, rto, path):
-        # init sqlwriter and create tables if not exist
+class Parser(QtCore.QObject):
+    sn_parse = QtCore.pyqtSignal(str, str, str)
+
+    def parse(self, rfrom, rto, path):
         sqlwriter = SQLLiteWriter("finanzen.db")
         sqlwriter.create_table(SOATable())
         sqlwriter.create_table(TransactionTable())
@@ -63,3 +64,5 @@ class Parser:
                     print(file + " is valid")
                 else:
                     print(file + " is invalid!! Please check!")
+
+
