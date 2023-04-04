@@ -10,6 +10,40 @@ TABLE_FONT = QtGui.QFont()
 TABLE_FONT.setPointSizeF(13)
 
 
+# window
+class MainWindow(QtWidgets.QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        WindowManager(self)
+
+        self.thread = QtCore.QThread()
+        self.parser = Parser()
+
+        self.parser.moveToThread(self.thread)
+
+        self.parser.sn_parse.connect(self.parser.parse)
+
+        self.thread.start()
+
+        self.content = MainElement()
+
+        self.setCentralWidget(self.content)
+
+        menu_bar = self.menuBar()
+        show_menu = menu_bar.addAction('Back')
+        file_menu = menu_bar.addMenu('File')
+        check_action = file_menu.addAction('Check for Updates')
+        quit_action = file_menu.addAction('Quit')
+        show_menu.triggered.connect(lambda: WindowManager.get_instance().back())
+        quit_action.triggered.connect(self.close)
+
+        MainWindow.main_instance = self
+
+    def on_button_clicked(self):
+        self.label.setText('Button clicked!')
+
+
 class SOAElement(QtWidgets.QWidget):
     def __init__(self, soa, show_element):
         super().__init__()
@@ -211,17 +245,6 @@ class OverviewElement(QtWidgets.QWidget):
 class MainElement(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-
-        self.widget = None
-        self.thread = QtCore.QThread()
-        self.parser = Parser()
-
-        self.parser.moveToThread(self.thread)
-
-        self.parser.sn_parse.connect(self.parser.parse)
-
-        self.thread.start()
-
         btn_show = QtWidgets.QPushButton("Show")
         btn_show.clicked.connect(self.showElement)
 
@@ -255,7 +278,7 @@ class MainElement(QtWidgets.QWidget):
                                                   QtWidgets.QSizePolicy.Policy.Expanding))
 
     def showElement(self):
-        WindowManager.show_overview()
+        WindowManager.get_instance().show_overview()
 
     def getfile(self):
         fname = str(QtWidgets.QFileDialog.getExistingDirectory(self, "Select Directory"))
@@ -269,29 +292,26 @@ class MainElement(QtWidgets.QWidget):
 
 
 class WindowManager:
-    load = None
-    main = MainElement()
+    instance = None
+    main = None
+    current_element = MainElement()
+    history = []
     overView = None
 
-    @staticmethod
-    def show_load():
-        WindowManager.compute()
-        WindowManager.overView.resize(800, 600)
-        WindowManager.overView.show()
+    def __init__(self, main):
+        self.main = main
+        WindowManager.instance = self
 
-    @staticmethod
-    def show_main():
-        WindowManager.main.resize(800, 600)
-        WindowManager.main.show()
+    def show_overview(self):
+        self.history.append(self.current_element)
+        self.compute()
+        self.main.setCentralWidget(self.current_element)
 
-    @staticmethod
-    def show_overview():
-        WindowManager.compute()
-        WindowManager.overView.resize(800, 600)
-        WindowManager.overView.show()
+    def back(self):
+        self.current_element = self.history.pop()
+        self.main.setCentralWidget(self.current_element)
 
-    @staticmethod
-    def compute():
+    def compute(self):
         sqlwriter = SQLLiteWriter("finanzen.db")
         sum_tab = SumElement()
         orderFilename = lambda y: "where soa_date like '%" + str(y) + "%' order by file_name"
@@ -318,7 +338,17 @@ class WindowManager:
             # add tab for each year
             tabs.append(YearElement(str(year), tabContent))
 
-        WindowManager.overView = OverviewElement(tabs, sum_tab)
+        self.current_element = OverviewElement(tabs, sum_tab)
+
+    @staticmethod
+    def show_main():
+        w = MainWindow()
+        w.resize(800, 600)
+        w.show()
+
+    @staticmethod
+    def get_instance():
+        return WindowManager.instance
 
 
 def create_total_table(i, o, s):
